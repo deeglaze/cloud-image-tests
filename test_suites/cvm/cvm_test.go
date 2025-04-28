@@ -43,6 +43,8 @@ import (
 
 var sevMsgList = []string{"AMD Secure Encrypted Virtualization (SEV) active", "AMD Memory Encryption Features active: SEV", "Memory Encryption Features active: AMD SEV"}
 var sevSnpMsgList = []string{"SEV: SNP guest platform device initialized", "Memory Encryption Features active: SEV SEV-ES SEV-SNP", "Memory Encryption Features active: AMD SEV SEV-ES SEV-SNP"}
+var sevSnpSvsmMsgList = append(sevSnpMsgList, "SEV: SNP running at VMPL2")
+var sevSnpSvsmVtpmMsgList = append(sevSnpSvsmMsgList, "tpm-svsm: SNP SVSM vTPM 2.0 device")
 var tdxMsgList = []string{"Memory Encryption Features active: TDX", "Memory Encryption Features active: Intel TDX", "Intel TDX", "tdx: Guest detected"}
 var rebootCmd = []string{"/usr/bin/sudo", "-n", "/sbin/reboot"}
 
@@ -143,6 +145,14 @@ func TestSEVEnabled(t *testing.T) {
 
 func TestSEVSNPEnabled(t *testing.T) {
 	searchDmesg(t, sevSnpMsgList)
+}
+
+func TestSEVSNPSVSMEnabled(t *testing.T) {
+	searchDmesg(t, sevSnpSvsmMsgList)
+}
+
+func TestSEVSNPSVSMVTPMEnabled(t *testing.T) {
+	searchDmesg(t, sevSnpSvsmVtpmMsgList)
 }
 
 func TestTDXEnabled(t *testing.T) {

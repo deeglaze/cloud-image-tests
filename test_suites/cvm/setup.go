@@ -16,7 +16,7 @@
 package cvm
 
 import (
-	"github.com/GoogleCloudPlatform/cloud-image-tests"
+	imagetest "github.com/GoogleCloudPlatform/cloud-image-tests"
 	"github.com/GoogleCloudPlatform/cloud-image-tests/utils"
 	daisy "github.com/GoogleCloudPlatform/compute-daisy"
 	computeBeta "google.golang.org/api/compute/v0.beta"
@@ -73,6 +73,36 @@ func TestSetup(t *imagetest.TestWorkflow) error {
 				return err
 			}
 			tvm.RunTests(sevsnptests)
+		case "SNP_SVSM_CAPABLE":
+			runTests := func(machineType, snpsvsmtests string) {
+				vm := &daisy.InstanceBeta{}
+				vm.Name = "sevsnp"
+				vm.Zone = "us-central1-a" // SEV_SNP not available in all regions
+				vm.ConfidentialInstanceConfig = &computeBeta.ConfidentialInstanceConfig{
+					ConfidentialInstanceType:  "SEV_SNP",
+					EnableConfidentialCompute: true,
+					ConfidentialParavisorConfig: &computeBeta.ConfidentialParavisorConfig{
+						ConfidentialTpmType: computeBeta.ConfidentialParavisorConfig_ConfidentialTpmType_EPHEMERAL,
+						SevSnpIrqMode:       computeBeta.ConfidentialParavisorConfig_SevSnpIrqMode_UNRESTRICTED,
+					},
+				}
+				vm.Scheduling = &computeBeta.Scheduling{OnHostMaintenance: "TERMINATE"}
+				vm.MachineType = machineType
+				vm.MinCpuPlatform = "AMD Milan"
+				disks := []*compute.Disk{
+					{Name: vm.Name, Type: imagetest.PdBalanced, Zone: "us-central1-a"},
+				}
+				tvm, err := t.CreateTestVMFromInstanceBeta(vm, disks)
+				if err != nil {
+					return err
+				}
+				tvm.RunTests(snpsvsmtests)
+			}
+			snpsvsmtests := "TestSEVSNPSVSMEnabled|TestSEVSNPSVSMVTPMEnabled"
+			snpsvsmBigTests := "TestSEVSNPSVSMEnabled"
+			runTests("n2d-standard-2", snpsvsmtests)
+			runTests("n2d-standard-128", snpsvsmBigTests)
+			runTests("n2d-standard-224", snpsvsmBigTests)
 		case "TDX_CAPABLE":
 			tdxtests := "TestTDXEnabled|TestTDXAttestation|TestCheckApicId|TestCheckCpuidLeaf7"
 			vm := &daisy.InstanceBeta{}
